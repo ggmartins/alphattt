@@ -1,0 +1,12 @@
+kubectl get componentstatuses
+kubectl get nodes
+kubectl get pods
+kubectl get pods -A -o wide
+kubectl get services --all-namespaces
+kubectl rollout restart deployment/my-app
+kubectl config current-context
+kubectl config use-context docker-desktop
+for node in $(docker ps --format '{{.Names}}' | grep '^desktop-'); do
+  echo "Loading image into $node"
+  docker save my-app:v0 | docker exec -i "$node" ctr -n k8s.io images import -
+done
