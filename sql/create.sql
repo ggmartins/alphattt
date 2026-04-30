@@ -15,7 +15,6 @@ CREATE TABLE Status (
     MoveCount INT NOT NULL DEFAULT 0
 );
 
-
 CREATE TABLE Sessions (
     SessionID INT PRIMARY KEY,
     Player1ID INT NOT NULL,

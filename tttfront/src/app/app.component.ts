@@ -10,7 +10,10 @@ import { WebsocketService } from './websocket.service';
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit, OnDestroy {
+  login = '';
   message = '';
+  player2 = '';
+  sessions: string[] = [];
   messages: string[] = [];
   connected = false;
 
@@ -42,6 +45,26 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.websocketService.sendMessage(trimmed);
     this.message = '';
+  }
+
+  sendLogin(): void {
+    const trimmed = this.login.trim();
+
+    if (!trimmed) {
+      return;
+    }
+
+    this.websocketService.sendMessage(`{ "command": "login", "username": "${trimmed}" }`);
+  }
+
+  sendInvite(): void {
+    const trimmed = this.player2.trim();
+
+    if (!trimmed) {
+      return;
+    }
+
+    this.websocketService.sendMessage(`{ "command": "invite", "username": "${trimmed}" }`);
   }
 
   ngOnDestroy(): void {
