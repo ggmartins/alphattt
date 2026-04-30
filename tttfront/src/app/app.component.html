@@ -1,5 +1,47 @@
 <main class="container">
-  <h1>Angular + FastAPI WebSocket</h1>
+  <h1>Alpha Tic Tac Toe</h1>
+
+  <div class="form">
+    <input
+      type="text"
+      [(ngModel)]="login"
+      placeholder="Username"
+      (keyup.enter)="sendLogin()"
+    />
+
+    <button type="button" (click)="sendLogin()">
+      Login
+    </button>
+  </div>
+
+  <div class="form">
+    <input
+      type="text"
+      [(ngModel)]="player2"
+      placeholder="Player 2 Username"
+      (keyup.enter)="sendInvite()"
+    />
+
+    <button type="button" (click)="sendInvite()">
+      Invite
+    </button>
+  </div>
+
+  <section class="sessions">
+    <h2>Sessions</h2>
+
+    @if (messages.length === 0) {
+      <p>No sessions yet.</p>
+    }
+
+    @for (session of sessions; track session) {
+      <div class="message">
+        {{ session }}
+      </div>
+    }
+  </section>
+
+  <hr />
 
   <p>
     Status:
@@ -19,7 +61,7 @@
     />
 
     <button type="button" (click)="sendMessage()">
-      Send
+      Echo
     </button>
   </div>
 

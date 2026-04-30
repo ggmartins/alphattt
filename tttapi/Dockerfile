@@ -21,7 +21,7 @@ RUN groupadd --system --gid 10001 app && \
       --create-home \
       app
 
-COPY --chown=app:app ./src/app.py /app/app.py
+COPY --chown=app:app ./src/ /app/
 
 RUN chmod 755 /app/app.py && \
     mkdir -p /app/.cache/uv && \

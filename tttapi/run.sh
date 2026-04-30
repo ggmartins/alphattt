@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker run --rm -p 8000:8000 my-app1:latest
+docker run --rm -p 8000:8000 my-app:v0

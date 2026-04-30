@@ -7,6 +7,7 @@ kubectl rollout restart deployment/my-app
 kubectl config current-context
 kubectl config use-context docker-desktop
 kubectl port-forward service/mysql-service 3306:3306
+kubectl port-forward service/my-app-service 8000:80
 
 for node in $(docker ps --format '{{.Names}}' | grep '^desktop-'); do
   echo "Loading image into $node"
