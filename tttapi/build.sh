@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker build -t my-app1:latest .
+docker build -t my-app:v0 .
