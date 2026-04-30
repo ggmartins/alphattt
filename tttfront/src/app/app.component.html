@@ -1,0 +1,39 @@
+<main class="container">
+  <h1>Angular + FastAPI WebSocket</h1>
+
+  <p>
+    Status:
+    @if (connected) {
+      <strong class="connected">Connected</strong>
+    } @else {
+      <strong class="disconnected">Disconnected</strong>
+    }
+  </p>
+
+  <div class="form">
+    <input
+      type="text"
+      [(ngModel)]="message"
+      placeholder="Type a message"
+      (keyup.enter)="sendMessage()"
+    />
+
+    <button type="button" (click)="sendMessage()">
+      Send
+    </button>
+  </div>
+
+  <section class="messages">
+    <h2>Messages</h2>
+
+    @if (messages.length === 0) {
+      <p>No messages yet.</p>
+    }
+
+    @for (msg of messages; track msg) {
+      <div class="message">
+        {{ msg }}
+      </div>
+    }
+  </section>
+</main>
