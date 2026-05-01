@@ -132,7 +132,8 @@ export class AppComponent implements OnInit, OnDestroy {
       timestamp: data['last_move'],
       board: data['board'] ?? [[null, null, null], [null, null, null], [null, null, null]],
       status: this.toMatchStatus(data['status']),
-      playingAs: data['playing_as']
+      playingAs: data['playing_as'],
+      nextTurn: data['next_turn']
     };
   }
 

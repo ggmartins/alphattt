@@ -17,7 +17,8 @@ export class SessionStatusComponent {
     timestamp: new Date(),
     board: [[null, null, null], [null, null, null], [null, null, null]],
     status: 'not_launched',
-    playingAs: "O"
+    playingAs: "O",
+    nextTurn: "Other Player"
   };
 
   @Output() launchMatch = new EventEmitter<number>();
