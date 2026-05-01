@@ -14,12 +14,17 @@ class SessionStatus:
     _session_status: str
     _status_date: str
 
-    def __init__(self, vsplayer: str, session_id: int, session_status: str, board: dict, status_date: str):
+    def __init__(self, vsplayer: str, session_id: int,
+                 session_status: str,
+                 board: dict,
+                 status_date: str,
+                 playing_as: str):
         self._status_board = board
         self._session_vsplayer = vsplayer
         self._session_id = session_id
         self._session_status = session_status
         self._status_date = status_date
+        self._playing_as = playing_as
 
     def to_dict(self) -> dict:
         return {
@@ -27,7 +32,8 @@ class SessionStatus:
             'vsplayer': self._session_vsplayer,
             'session_id': self._session_id,
             'status': self._session_status,
-            'last_move': self._status_date
+            'last_move': self._status_date,
+            'playing_as': self._playing_as
         }
 
 
@@ -85,7 +91,8 @@ class DB:
                 session.SessionID,
                 session.IsFinished,
                 status.Data,
-                str(status.TS)
+                str(status.TS),
+                "X" if session.Player1ID == playerid else "O"
             )
             return ss
             

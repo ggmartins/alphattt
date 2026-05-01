@@ -47,7 +47,7 @@
   <app-tic-tac-toe-board
     *ngIf="showBoard"
     [board]="board"
-    [player]="player"
+    [player]="playingAs"
     [sessionid]="sessionid"
     [fullscreen]="true"
     (move)="onMove($event)"
