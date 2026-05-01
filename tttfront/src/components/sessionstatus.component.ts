@@ -14,7 +14,9 @@ export class SessionStatusComponent {
     sessionId: 1,
     vsplayer: 'Player 1',
     timestamp: new Date(),
+    board: [[null, null, null], [null, null, null], [null, null, null]],
     status: 'not_launched',
+    playingAs: "O"
   };
 
   @Output() launchMatch = new EventEmitter<number>();

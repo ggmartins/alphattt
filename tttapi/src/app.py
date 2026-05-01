@@ -45,17 +45,25 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return HTMLResponse(f"""
-    <h1>FastAPI WebSocket Template backend is running (v2).</h1>
-    <p>db_connection_string: {db_connection_string}</p>
-    <p>Angular should connect to <code>ws://localhost:8000/ws</code></p>
-    """)
+    return HTMLResponse(""" 
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Alpha TTT Board API</title>
+            </head>
+            <body>
+                <H1>
+                <a href="/docs">Alpha TTT Board API</a>
+                </H1>
+            </body>
+            </html>
+        """)
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
-    controller = Controller(db)
+    controller : Controller = Controller(db)
 
     try:
         while True:
@@ -77,7 +85,7 @@ def health():
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run the FastAPI app."
+        description="Run the Alpha TTT app."
     )
 
     parser.add_argument(

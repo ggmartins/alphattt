@@ -29,12 +29,12 @@ export class AppComponent implements OnInit, OnDestroy {
   showBoard = false;
 
   board: TicTacToeBoard = [
-    ['X', 'O', 'X'],
-    [null, 'O', null],
-    [null, null, 'X']
+    [null, null, null],
+    [null, null, null],
+    [null, null, null]
   ];
-  player: 'X' | 'O' = 'X';
-  sessionid = '1005';
+  playingAs: 'X' | 'O' = 'X';
+  sessionid = '0';
 
   constructor(
     private websocketService: WebsocketService,
@@ -64,6 +64,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   launchBoard(): void {
+
     this.showBoard = true;
   }
 
@@ -73,6 +74,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   onMove(event: TicTacToeMoveEvent): void {
     console.log('Move clicked:', event);
+    this.board[event.row][event.col] = this.playingAs;
+    console.log('Updated board:', this.board);
   }
   command_login(result: Record<string, any>) {
     if (result['error']) {
@@ -94,16 +97,27 @@ export class AppComponent implements OnInit, OnDestroy {
       JSON.stringify({ command: 'launch', session_id: sessionId })
     );
     console.log(`Launching match for session: ${sessionId}`)
+
+    const session = this.sessions.find(s => s.sessionId === sessionId);
+    if (session) {
+      this.sessionid = String(session.sessionId);
+      const sessionBoard = (session.board as any).board;
+      this.board = sessionBoard;
+      this.playingAs = session.playingAs;
+      console.log(`Playing as: ${this.playingAs}`)
+    }
+
     this.launchBoard();
   }
 
   private toSessionStatus(data: Record<string, any>): SessionStatus {
-    console.log(`VSPlayer: ${data['vsplayer']}`);
     return {
       sessionId: Number(data['sessionId'] ?? data['session_id']),
       vsplayer: data['vsplayer'],
       timestamp: data['last_move'],
+      board: data['board'] ?? [[null, null, null], [null, null, null], [null, null, null]],
       status: this.toMatchStatus(data['status']),
+      playingAs: data['playing_as']
     };
   }
 

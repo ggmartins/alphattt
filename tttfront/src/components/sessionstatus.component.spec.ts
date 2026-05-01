@@ -11,7 +11,13 @@ describe('SessionStatusComponent', () => {
     sessionId: 10,
     vsplayer: 'Alice',
     timestamp: new Date('2026-04-30T12:00:00'),
+    board: [
+      [null, null, null],
+      [null, null, null],
+      [null, null, null],
+    ],
     status: 'not_launched',
+    playingAs: "O"
   };
 
   beforeEach(async () => {
