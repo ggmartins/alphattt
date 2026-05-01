@@ -13,6 +13,7 @@ export class SessionStatusComponent {
   @Input() session: SessionStatus = {
     sessionId: 1,
     vsplayer: 'Player 1',
+    playerId: 1,
     timestamp: new Date(),
     board: [[null, null, null], [null, null, null], [null, null, null]],
     status: 'not_launched',
