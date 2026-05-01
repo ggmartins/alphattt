@@ -1,6 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from './websocket.service';
+import { SessionStatus } from '../components/sessionstatus.model';
 
 @Component({
   selector: 'app-root',
@@ -13,7 +14,7 @@ export class AppComponent implements OnInit, OnDestroy {
   login = '';
   message = '';
   player2 = '';
-  sessions: string[] = [];
+  sessions: SessionStatus[] = [];
   messages: string[] = [];
   connected = false;
 
@@ -22,7 +23,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.websocketService.connect(
       (message: string) => {
-        this.messages.push(message);
+        this.recvMessage(message);
       },
       () => {
         this.connected = true;
@@ -34,6 +35,34 @@ export class AppComponent implements OnInit, OnDestroy {
         this.connected = false;
       }
     );
+  }
+
+  command_login(result: Record<string, any>) {
+
+    if (result['error']) {
+      this.messages.push(`Login error: ${result['error']}`);
+      return;
+    }
+
+    this.sessions = result['data'];
+  }
+
+  recvMessage(message: string) {
+    this.messages.push(message);
+    const data = JSON.parse(message);
+
+    switch (data['command']) {
+      case 'login':
+        this.messages.push(`Login result: ${data['result']}`);
+        this.command_login(data['result']);
+        break;
+      case 'invite':
+        this.messages.push(`Invite result: ${data['result']}`);
+        break;
+      default:
+        console.log(`Message: ${message}`);
+        return;
+    }
   }
 
   sendMessage(): void {
@@ -72,18 +101,3 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 }
 
-
-/*
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-
-@Component({
-  selector: 'app-root',
-  imports: [RouterOutlet],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
-})
-export class AppComponent {
-  title = 'tttfront';
-}
-*/

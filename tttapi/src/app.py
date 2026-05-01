@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
 from db.db import DB
+from controller import Controller
 
 import os
 import uvicorn
@@ -28,7 +29,10 @@ db_connection_string = \
     f"{os.getenv('DB_PASSWORD')}" + \
     f"@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
 
+print(f"DB Connection String: {db_connection_string}")
 db = DB(db_connection_string)
+
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -50,15 +54,21 @@ def read_root():
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
 
+    controller = Controller(db)
+
     try:
         while True:
             data = await websocket.receive_text()
             print(f"Echoing: {data}")
-
+            if not controller:
+                print("Controller is not initialized")
+                continue
+            result = await controller.handle_websocket_message(data)
             await websocket.send_text(f"Echo: {data}")
+            await websocket.send_text(f"{result}")
 
-    except WebSocketDisconnect:
-        print("Client disconnected")
+    except WebSocketDisconnect as wsd:
+        print(f"Client disconnected: {wsd}")
 
 @app.get("/health")
 def health():
