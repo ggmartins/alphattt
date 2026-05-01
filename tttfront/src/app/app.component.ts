@@ -34,6 +34,7 @@ export class AppComponent implements OnInit, OnDestroy {
     [null, null, null]
   ];
   playingAs: 'X' | 'O' = 'X';
+  playerId = 0;
   sessionid = '0';
 
   constructor(
@@ -62,9 +63,7 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-
   launchBoard(): void {
-
     this.showBoard = true;
   }
 
@@ -74,8 +73,19 @@ export class AppComponent implements OnInit, OnDestroy {
 
   onMove(event: TicTacToeMoveEvent): void {
     console.log('Move clicked:', event);
-    this.board[event.row][event.col] = this.playingAs;
-    console.log('Updated board:', this.board);
+    //this.board[event.row][event.col] = this.playingAs;
+    //console.log('Updated board:', this.board);
+    this.websocketService.sendMessage(
+      JSON.stringify({
+        command: 'move',
+        session_id: event.sessionid,
+        player: event.player,
+        player_id: this.playerId,
+        row: event.row,
+        col: event.col,
+        board: event.board
+      })
+    );
   }
   command_login(result: Record<string, any>) {
     if (result['error']) {
@@ -88,6 +98,9 @@ export class AppComponent implements OnInit, OnDestroy {
         const session = this.toSessionStatus(element);
         console.log('Adding session:', session);
         this.sessions.push(session);
+        if (this.playerId == 0) {
+          this.playerId = session.playerId;
+        }
       });
     }
   }
@@ -104,6 +117,7 @@ export class AppComponent implements OnInit, OnDestroy {
       const sessionBoard = (session.board as any).board;
       this.board = sessionBoard;
       this.playingAs = session.playingAs;
+      this.playerId = session.playerId;
       console.log(`Playing as: ${this.playingAs}`)
     }
 
@@ -114,6 +128,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return {
       sessionId: Number(data['sessionId'] ?? data['session_id']),
       vsplayer: data['vsplayer'],
+      playerId: Number(data['player_id']),
       timestamp: data['last_move'],
       board: data['board'] ?? [[null, null, null], [null, null, null], [null, null, null]],
       status: this.toMatchStatus(data['status']),
@@ -146,6 +161,12 @@ export class AppComponent implements OnInit, OnDestroy {
               break;
             case 'invite':
               this.messages.push(`Invite result: ${data['result']}`);
+              break;
+            case 'move':
+              this.messages.push(`Move result: ${data['result']}`);
+              if (data['error']) {
+                alert(`Move error: ${data['error_message']}`);
+              }
               break;
             case 'launch':
               this.messages.push(`Launch received.`);

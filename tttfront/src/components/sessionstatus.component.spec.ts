@@ -10,6 +10,7 @@ describe('SessionStatusComponent', () => {
   const mockSession: SessionStatus = {
     sessionId: 10,
     vsplayer: 'Alice',
+    playerId: 1,
     timestamp: new Date('2026-04-30T12:00:00'),
     board: [
       [null, null, null],

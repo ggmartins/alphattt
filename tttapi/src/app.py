@@ -62,9 +62,7 @@ def read_root():
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-
     controller : Controller = Controller(db)
-
     try:
         while True:
             data = await websocket.receive_text()

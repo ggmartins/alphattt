@@ -18,7 +18,7 @@ class Controller:
         try:
             data = self._db.get_user_sessions(message['username'])
         except Exception as e:
-            print(f"Excaption command_login: {e}")
+            print(f"Exception command_login: {e}")
             result['error'] = True
             result['error_message'] = str(e)
 
@@ -28,12 +28,26 @@ class Controller:
     async def command_launch(self, message: str) -> dict | None:
         result = { 'command': 'launch', 'error': False, 'error_message': None }
         print(f"Launch command received: {message}.")
-        return 
+        return result
+    
+    async def command_move(self, message: str) -> dict | None:
+        result = { 'command': 'move', 'error': False, 'error_message': None }
+        try:
+            ok, msg = self._db.move_user(message)
+        except Exception as e:
+            print(f"Exception command_move: {e}")
+            result['error'] = True
+            result['error_message'] = str(e)
+        if not ok:
+            result['error'] = True
+            result['error_message'] = msg
+        return result
 
     async def handle_websocket_message(self, message: str) -> dict | None:
         commands = {
             'login': self.command_login,
-            'launch': self.command_launch
+            'launch': self.command_launch,
+            'move': self.command_move
         }
 
         try:
