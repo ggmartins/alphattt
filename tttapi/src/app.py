@@ -17,6 +17,7 @@ from db.db import DB
 from controller import Controller
 
 import os
+import json
 import uvicorn
 import argparse
 
@@ -64,8 +65,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 print("Controller is not initialized")
                 continue
             result = await controller.handle_websocket_message(data)
-            await websocket.send_text(f"Echo: {data}")
-            await websocket.send_text(f"{result}")
+            await websocket.send_text(f"{json.dumps({'echo': data})}")
+            await websocket.send_text(f"{json.dumps(result)}")
 
     except WebSocketDisconnect as wsd:
         print(f"Client disconnected: {wsd}")
@@ -86,7 +87,6 @@ def parse_args() -> argparse.Namespace:
     )
 
     return parser.parse_args()
-
 
 if __name__ == "__main__":
     args = parse_args()

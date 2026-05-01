@@ -12,19 +12,22 @@ class SessionStatus:
     _session_vsplayer: str
     _session_id: int
     _session_status: str
+    _status_date: str
 
-    def __init__(self, vsplayer: str, session_id: int, session_status: str, board: dict):
+    def __init__(self, vsplayer: str, session_id: int, session_status: str, board: dict, status_date: str):
         self._status_board = board
         self._session_vsplayer = vsplayer
         self._session_id = session_id
         self._session_status = session_status
-    
+        self._status_date = status_date
+
     def to_dict(self) -> dict:
         return {
             'board': self._status_board,
             'vsplayer': self._session_vsplayer,
             'session_id': self._session_id,
-            'status': self._session_status
+            'status': self._session_status,
+            'last_move': self._status_date
         }
 
 
@@ -46,7 +49,12 @@ class DB:
         with Session(self.engine) as sessionsql:
             playerid = sessionsql.exec(
                     select(Players.PlayerID).where(Players.PlayerName == username)
-                ).first()[0]
+                )
+            if playerid:
+                playerid = playerid.first()[0]
+            else:
+                raise ValueError(f"Player {username} not found.")
+
             statement = select(Sessions).where( or_(
                 Sessions.Player1ID == playerid,
                 Sessions.Player2ID == playerid,
@@ -63,24 +71,21 @@ class DB:
                 results.append(self.get_sessionstatus(playerid, session[0])
                                    .to_dict())
 
-            result=json.dumps(results, indent=4)
-            return result
+            return results
 
     def get_sessionstatus(self, playerid: int, session: Sessions) -> SessionStatus:
         ss : SessionStatus
 
-        vsplayer = session.Player1ID
-
-        if session.Player1ID == playerid:
-            vsplayer = session.Player2ID
-
         with Session(self.engine) as sessionsql:
+            opponentid = session.Player2ID if session.Player1ID == playerid else session.Player1ID
+            vsplayer = sessionsql.exec(select(Players.PlayerName).where(Players.PlayerID == opponentid)).first()[0]
             status = sessionsql.get(Status, session.StatusID)
             ss = SessionStatus(
                 vsplayer,
                 session.SessionID,
                 session.IsFinished,
-                status.Data
+                status.Data,
+                str(status.TS)
             )
             return ss
             

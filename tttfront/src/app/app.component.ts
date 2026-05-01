@@ -1,12 +1,14 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, Inject, OnDestroy, OnInit, PLATFORM_ID } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from './websocket.service';
-import { SessionStatus } from '../components/sessionstatus.model';
+import { SessionStatusComponent } from '../components/sessionstatus.component';
+import { MatchStatus, SessionStatus } from '../components/sessionstatus.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, SessionStatusComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -18,9 +20,16 @@ export class AppComponent implements OnInit, OnDestroy {
   messages: string[] = [];
   connected = false;
 
-  constructor(private websocketService: WebsocketService) {}
+  constructor(
+    private websocketService: WebsocketService,
+    @Inject(PLATFORM_ID) private platformId: object
+  ) {}
 
   ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.websocketService.connect(
       (message: string) => {
         this.recvMessage(message);
@@ -38,17 +47,51 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   command_login(result: Record<string, any>) {
-
     if (result['error']) {
-      this.messages.push(`Login error: ${result['error']}`);
+      this.messages.push(`Login error: ${result['error_message']}`);
       return;
     }
 
-    this.sessions = result['data'];
+    if (result['data']) {
+      (result['data'] as any[]).forEach(element => {
+        const session = this.toSessionStatus(element);
+        console.log('Adding session:', session);
+        this.sessions.push(session);
+      });
+    }
+  }
+
+  onLaunchMatch(sessionId: number): void {
+    this.websocketService.sendMessage(
+      JSON.stringify({ command: 'launch', session_id: sessionId })
+    );
+  }
+
+  private toSessionStatus(data: Record<string, any>): SessionStatus {
+    console.log(`LASTMOVE: ${data['last_move']}`)
+    return {
+      sessionId: Number(data['sessionId'] ?? data['session_id']),
+      vsplayer: data['vsplayer'],
+      timestamp: data['last_move'],
+      status: this.toMatchStatus(data['status']),
+    };
+  }
+
+  private toMatchStatus(status: unknown): MatchStatus {
+    if (status === true) {
+      return 'finished';
+    }
+
+    if (status === 'finished' || status === 'ongoing' || status === 'not_launched') {
+      return status;
+    }
+
+    return 'not_launched';
   }
 
   recvMessage(message: string) {
     this.messages.push(message);
+    console.log(`Received message: [${message}]`);
     const data = JSON.parse(message);
 
     switch (data['command']) {
@@ -97,7 +140,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.websocketService.disconnect();
+    if (isPlatformBrowser(this.platformId)) {
+      this.websocketService.disconnect();
+    }
   }
 }
-
