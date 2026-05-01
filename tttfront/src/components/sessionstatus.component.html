@@ -1,0 +1,41 @@
+<div class="session-card">
+  <div class="session-header">
+    <div>
+      <h2>Session #{{ session.sessionId }}</h2>
+      <p class="timestamp">
+        Last updated: {{ session.timestamp | date: 'medium' }}
+      </p>
+    </div>
+
+    <span
+      class="status-badge"
+      [ngClass]="{
+        'status-finished': session.status === 'finished',
+        'status-ongoing': session.status === 'ongoing',
+        'status-not-launched': session.status === 'not_launched'
+      }"
+    >
+      {{ statusLabel }}
+    </span>
+  </div>
+
+  <div class="players-grid">
+    <div class="player-box">
+      <h3>Vs Player</h3>
+      <p class="player-name">{{ session.vsplayer.playerName }}</p>
+      <p class="player-id">ID: {{ session.vsplayer.playerId }}</p>
+    </div>
+
+  </div>
+
+  <div class="actions">
+    <button
+      type="button"
+      class="launch-button"
+      [disabled]="!canLaunch"
+      (click)="onLaunchClick()"
+    >
+      Launch Match
+    </button>
+  </div>
+</div>
