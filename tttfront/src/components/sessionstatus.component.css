@@ -1,10 +1,9 @@
 .session-card {
   max-width: 620px;
+  margin-bottom: 1rem;
   padding: 1.25rem;
   border: 1px solid #ddd;
-  border-radius: 12px;
   background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   font-family: Arial, sans-serif;
 }
 
@@ -47,12 +46,12 @@
 
 .status-not-launched {
   background: #e8f0fe;
-  color: #174ea6;
+  color: #232323;
 }
 
 .players-grid {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr;
   gap: 1rem;
   align-items: center;
 }
@@ -60,7 +59,6 @@
 .player-box {
   padding: 1rem;
   border: 1px solid #eee;
-  border-radius: 10px;
   background: #fafafa;
 }
 
@@ -94,17 +92,9 @@
 }
 
 .launch-button {
-  padding: 0.65rem 1rem;
-  border: none;
-  border-radius: 8px;
-  background: #2563eb;
-  color: white;
-  font-weight: 700;
+  padding: 5px 16px;
+  font-size: 16px;
   cursor: pointer;
-}
-
-.launch-button:hover:not(:disabled) {
-  background: #1d4ed8;
 }
 
 .launch-button:disabled {

@@ -1,9 +1,9 @@
 <div class="session-card">
   <div class="session-header">
     <div>
-      <h2>Session #{{ session.sessionId }}</h2>
+      <h3>Session #{{ session.sessionId }}</h3>
       <p class="timestamp">
-        Last updated: {{ session.timestamp | date: 'medium' }}
+        Last updated: {{ session.timestamp }}
       </p>
     </div>
 
@@ -21,9 +21,7 @@
 
   <div class="players-grid">
     <div class="player-box">
-      <h3>Vs Player</h3>
-      <p class="player-name">{{ session.vsplayer.playerName }}</p>
-      <p class="player-id">ID: {{ session.vsplayer.playerId }}</p>
+      <p class="player-name">Versus: {{ session.vsplayer }}</p>
     </div>
 
   </div>

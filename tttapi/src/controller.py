@@ -11,16 +11,24 @@ class Controller:
         self._db = db
     
     async def command_login(self, message: str) :
-        print(f"Login command received: {message}. DB")
-        result = self._db.get_user_sessions(message['username'])
+        result = { 'command': 'login', 'error': False, 'error_message': None }
+        print(f"Login command received: {message}.")
+
+        data = ""
+        try:
+            data = self._db.get_user_sessions(message['username'])
+        except Exception as e:
+            print(f"Excaption command_login: {e}")
+            result['error'] = True
+            result['error_message'] = str(e)
+
+        result['result'] = { 'data': data }
         return result
 
     async def handle_websocket_message(self, message: str):
         commands = {
             'login': self.command_login,
         }
-
-        # Use pydantic to enforce schema
 
         try:
             data = json.loads(message)

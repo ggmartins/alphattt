@@ -20,16 +20,6 @@ describe('SessionStatusComponent', () => {
     await TestBed.configureTestingModule({
       imports: [SessionStatusComponent],
     }).compileComponents();
-      playerName: 'Bob',
-    },
-    timestamp: new Date('2026-04-30T12:00:00'),
-    status: 'not_launched',
-  };
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [SessionStatusComponent],
-    }).compileComponents();
 
     fixture = TestBed.createComponent(SessionStatusComponent);
     component = fixture.componentInstance;
@@ -41,11 +31,10 @@ describe('SessionStatusComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should display player 1 and player 2 names', () => {
+  it('should display the opposing player name', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.textContent).toContain('Alice');
-    expect(compiled.textContent).toContain('Bob');
   });
 
   it('should display session id', () => {

@@ -34,10 +34,11 @@
       <p>No sessions yet.</p>
     }
 
-    @for (session of sessions; track session) {
-      <div class="message">
-        {{ session }}
-      </div>
+    @for (session of sessions; track session.sessionId) {
+      <app-sessionstatus
+        [session]="session"
+        (launchMatch)="onLaunchMatch($event)"
+      />
     }
   </section>
 

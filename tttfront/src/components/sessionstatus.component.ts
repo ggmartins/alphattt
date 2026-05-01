@@ -12,13 +12,9 @@ import { SessionStatus } from './sessionstatus.model';
 export class SessionStatusComponent {
   @Input() session: SessionStatus = {
     sessionId: 1,
-    player1: {
+    vsplayer: {
       playerId: 1,
       playerName: 'Player 1',
-    },
-    player2: {
-      playerId: 2,
-      playerName: 'Player 2',
     },
     timestamp: new Date(),
     status: 'not_launched',
