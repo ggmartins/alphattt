@@ -1,21 +1,18 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule, DatePipe, NgClass } from '@angular/common';
+import { CommonModule, NgClass } from '@angular/common';
 import { SessionStatus } from './sessionstatus.model';
 
 @Component({
   selector: 'app-sessionstatus',
   standalone: true,
-  imports: [CommonModule, DatePipe, NgClass],
+  imports: [CommonModule, NgClass],
   templateUrl: './sessionstatus.component.html',
   styleUrl: './sessionstatus.component.css',
 })
 export class SessionStatusComponent {
   @Input() session: SessionStatus = {
     sessionId: 1,
-    vsplayer: {
-      playerId: 1,
-      playerName: 'Player 1',
-    },
+    vsplayer: 'Player 1',
     timestamp: new Date(),
     status: 'not_launched',
   };

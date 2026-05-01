@@ -8,10 +8,7 @@ describe('SessionStatusComponent', () => {
 
   const mockSession: SessionStatus = {
     sessionId: 10,
-    vsplayer: {
-      playerId: 1,
-      playerName: 'Alice',
-    },
+    vsplayer: 'Alice',
     timestamp: new Date('2026-04-30T12:00:00'),
     status: 'not_launched',
   };

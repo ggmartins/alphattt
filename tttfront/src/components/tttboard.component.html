@@ -1,0 +1,35 @@
+<div class="ttt-wrapper" [class.ttt-fullscreen]="fullscreen">
+  <div class="ttt-panel">
+    <div class="ttt-header">
+      <div>
+        <h2>Tic-Tac-Toe</h2>
+        <p>Session: {{ sessionid }}</p>
+        <p>Playing as: {{ player }}</p>
+      </div>
+
+      <button class="ttt-close-button" type="button" (click)="onClose()">
+        ✕
+      </button>
+    </div>
+
+    <div class="ttt-board">
+      <div
+        class="ttt-row"
+        *ngFor="let row of board; let rowIndex = index; trackBy: trackByRow"
+      >
+        <button
+          class="ttt-cell"
+          type="button"
+          *ngFor="let cell of row; let colIndex = index; trackBy: trackByCol"
+          [class.ttt-x]="cell === 'X'"
+          [class.ttt-o]="cell === 'O'"
+          [class.ttt-empty]="cell === null"
+          [disabled]="disabled || cell !== null"
+          (click)="onCellClick(rowIndex, colIndex)"
+        >
+          {{ cell || '' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
