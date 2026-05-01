@@ -1,3 +1,4 @@
+import traceback
 from utils import singleton
 from db.db import DB
 import json
@@ -35,12 +36,16 @@ class Controller:
         try:
             ok, msg = self._db.move_user(message)
         except Exception as e:
-            print(f"Exception command_move: {e}")
+            print(f"Exception command_move: {type(e).__name__}: {e}")
+            traceback.print_exc()
             result['error'] = True
             result['error_message'] = str(e)
+            return result
+
         if not ok:
             result['error'] = True
             result['error_message'] = msg
+
         return result
 
     async def handle_websocket_message(self, message: str) -> dict | None:
@@ -61,4 +66,3 @@ class Controller:
         print(f"Calling function: [{data.get('command')}]")
         
         return await command(data)
-

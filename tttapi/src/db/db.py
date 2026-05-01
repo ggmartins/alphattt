@@ -56,53 +56,93 @@ class DB:
     def get_session(self):
         return Session(self.engine)
     
-    def validate_move(self, data: list, next_turn: str,
+    def validate_move(self, data, next_turn: str,
                                         player_id: int,
-                                        col:int, row: int) -> tuple[bool, str]:
+                                        col:int, row: int) -> tuple[bool, str | None, int]:
         print(
             f"Validating move: {data}, Next turn: {next_turn}, Player ID: {player_id}, Column: {col}, Row: {row}"
         )
         if next_turn != player_id:
             print("Not your turn.")
-            return False, "Not your turn."
+            return False, "Not your turn.", -1
 
-        return True, ""
+        if data['board'][row][col] is not None:
+            print("Position already occupied.")
+            return False, "Position already occupied.", -1
+        
+        for i in range(len(data['board'])):
+            if data['board'][i][0]=='X' and data['board'][i][1]=='X' and data['board'][i][2]=='X':
+                return True, "Game Over", player_id
+                
+        for i in range(len(data['board'])):
+            if data['board'][i][0]=='O' and data['board'][i][1]=='O' and data['board'][i][2]=='O':
+                return True, "Game Over", player_id     
 
-    def move_user(self, message: dict) -> bool:
+        for i in range(len(data['board'])):
+            if data['board'][0][i]=='X' and data['board'][1][i]=='X' and data['board'][2][i]=='X':
+                return True, "Game Over", player_id  
+
+        for i in range(len(data['board'])):
+            if data['board'][0][i]=='O' and data['board'][1][i]=='O' and data['board'][2][i]=='O':
+                return True, "Game Over", player_id  
+
+        if data['board'][0][0]=='X' and data['board'][1][1]=='X' and data['board'][2][2]=='X':
+                return True, "Game Over", player_id 
+
+        if data['board'][0][0]=='O' and data['board'][1][1]=='O' and data['board'][2][2]=='O':
+                return True, "Game Over", player_id 
+
+
+        return True, None, -1
+
+    def move_user(self, message: dict) -> tuple[bool, str | None]:
         print(f"Moving user: {message}")
 
         with Session(self.engine) as sessionsql:
             statement = select(Sessions).where(Sessions.SessionID == message['session_id'])
-            session = sessionsql.exec(statement).first()[0]
+            row = sessionsql.exec(statement).first()
+            session = row[0] if row else None
+
             if not session:
                 print(f"Session {message['session_id']} not found.")
-                return False
+                return False, f"Session {message['session_id']} not found."
 
             # Update status
             print(f">>>Updating status for session: {session.SessionID}")
             status = sessionsql.get(Status, session.StatusID)
-            #status.Data = json.loads(message['board'])
 
-            (ok, msg) = self.validate_move(
+            ok, msg, winner = self.validate_move(
                 data=status.Data,
                 next_turn=session.NextTurn,
                 player_id=message['player_id'],
                 col=message['col'],
                 row=message['row']
             )
+
             if not ok:
                 print(f"Move validation failed: {msg}")
                 return ok, msg
-            status.MoveCount += 1
-            sessionsql.add(status)
+            
+            print(f"OLD DATA: {status.Data['board']}")
+            player_as = "X" if session.Player1ID == message['player_id'] else "O"
+            move_count = status.MoveCount + 1
+            data = status.Data['board']
+            data[message['row']][message['col']] = player_as
+            print(f"NEW DATA: {data}")
+
+            newstatus = Status(Data=data,
+                               MoveCount=move_count,
+                               SessionID=session.SessionID)
+            sessionsql.add(newstatus)
             sessionsql.commit()
 
             # Update session
             session.NextTurn = session.Player2ID if session.NextTurn == session.Player1ID else session.Player1ID
+            session.StatusID = newstatus.StatusID
             sessionsql.add(session)
             sessionsql.commit()
 
-        return True
+        return True, None
 
 
     # Get Sessions filtered by login userid
@@ -164,4 +204,3 @@ class DB:
 
             
             
-
