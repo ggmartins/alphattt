@@ -1,3 +1,4 @@
+import 'jasmine';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SessionStatusComponent } from './sessionstatus.component';
 import { SessionStatus } from './sessionstatus.model';
