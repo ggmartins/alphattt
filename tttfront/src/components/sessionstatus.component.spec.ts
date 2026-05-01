@@ -18,7 +18,8 @@ describe('SessionStatusComponent', () => {
       [null, null, null],
     ],
     status: 'not_launched',
-    playingAs: "O"
+    playingAs: "O",
+    nextTurn: "Other Player"
   };
 
   beforeEach(async () => {
