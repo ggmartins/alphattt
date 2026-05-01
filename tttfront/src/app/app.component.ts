@@ -1,17 +1,24 @@
-import { isPlatformBrowser } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, Inject, OnDestroy, OnInit, PLATFORM_ID } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { WebsocketService } from './websocket.service';
 import { SessionStatusComponent } from '../components/sessionstatus.component';
 import { MatchStatus, SessionStatus } from '../components/sessionstatus.model';
 
+import {
+  TicTacToeBoardComponent,
+  TicTacToeBoard,
+  TicTacToeMoveEvent
+} from '../components/tttboard.component';
+
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormsModule, SessionStatusComponent],
+  imports: [CommonModule, FormsModule, SessionStatusComponent, TicTacToeBoardComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
+
 export class AppComponent implements OnInit, OnDestroy {
   login = '';
   message = '';
@@ -19,6 +26,15 @@ export class AppComponent implements OnInit, OnDestroy {
   sessions: SessionStatus[] = [];
   messages: string[] = [];
   connected = false;
+  showBoard = false;
+
+  board: TicTacToeBoard = [
+    ['X', 'O', 'X'],
+    [null, 'O', null],
+    [null, null, 'X']
+  ];
+  player: 'X' | 'O' = 'X';
+  sessionid = '1005';
 
   constructor(
     private websocketService: WebsocketService,
@@ -46,6 +62,18 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
+
+  launchBoard(): void {
+    this.showBoard = true;
+  }
+
+  closeBoard(): void {
+    this.showBoard = false;
+  }
+
+  onMove(event: TicTacToeMoveEvent): void {
+    console.log('Move clicked:', event);
+  }
   command_login(result: Record<string, any>) {
     if (result['error']) {
       this.messages.push(`Login error: ${result['error_message']}`);
@@ -65,10 +93,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.websocketService.sendMessage(
       JSON.stringify({ command: 'launch', session_id: sessionId })
     );
+    console.log(`Launching match for session: ${sessionId}`)
+    this.launchBoard();
   }
 
   private toSessionStatus(data: Record<string, any>): SessionStatus {
-    console.log(`LASTMOVE: ${data['last_move']}`)
+    console.log(`VSPlayer: ${data['vsplayer']}`);
     return {
       sessionId: Number(data['sessionId'] ?? data['session_id']),
       vsplayer: data['vsplayer'],
@@ -92,18 +122,28 @@ export class AppComponent implements OnInit, OnDestroy {
   recvMessage(message: string) {
     this.messages.push(message);
     console.log(`Received message: [${message}]`);
-    const data = JSON.parse(message);
 
-    switch (data['command']) {
-      case 'login':
-        this.messages.push(`Login result: ${data['result']}`);
-        this.command_login(data['result']);
-        break;
-      case 'invite':
-        this.messages.push(`Invite result: ${data['result']}`);
-        break;
-      default:
-        console.log(`Message: ${message}`);
+    try {
+        const data = JSON.parse(message);
+        switch (data['command']) {
+            case 'login':
+              this.messages.push(`Login result: ${data['result']}`);
+              this.command_login(data['result']);
+              break;
+            case 'invite':
+              this.messages.push(`Invite result: ${data['result']}`);
+              break;
+            case 'launch':
+              this.messages.push(`Launch received.`);
+              break;
+            default:
+              console.log(`Message: ${message}`);
+              return;
+        }  
+    }
+    catch(e)
+    {
+        console.log(`recvMessage: Error parsing message: ${e}`);
         return;
     }
   }

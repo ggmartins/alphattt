@@ -10,7 +10,7 @@ class Controller:
     def __init__(self, db: DB):
         self._db = db
     
-    async def command_login(self, message: str) :
+    async def command_login(self, message: str) -> dict | None:
         result = { 'command': 'login', 'error': False, 'error_message': None }
         print(f"Login command received: {message}.")
 
@@ -24,10 +24,16 @@ class Controller:
 
         result['result'] = { 'data': data }
         return result
+    
+    async def command_launch(self, message: str) -> dict | None:
+        result = { 'command': 'launch', 'error': False, 'error_message': None }
+        print(f"Launch command received: {message}.")
+        return 
 
-    async def handle_websocket_message(self, message: str):
+    async def handle_websocket_message(self, message: str) -> dict | None:
         commands = {
             'login': self.command_login,
+            'launch': self.command_launch
         }
 
         try:

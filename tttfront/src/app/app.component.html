@@ -44,6 +44,16 @@
 
   <hr />
 
+  <app-tic-tac-toe-board
+    *ngIf="showBoard"
+    [board]="board"
+    [player]="player"
+    [sessionid]="sessionid"
+    [fullscreen]="true"
+    (move)="onMove($event)"
+    (close)="closeBoard()"
+  >
+  </app-tic-tac-toe-board>
   <p>
     Status:
     @if (connected) {
