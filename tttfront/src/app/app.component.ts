@@ -113,6 +113,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.board = result['data']['board'];
+    this.turn = result['data']['next_turn'].split(":")[1] as 'X' | 'O';
   }
 
   onLaunchMatch(sessionId: number): void {
@@ -170,7 +171,7 @@ export class AppComponent implements OnInit, OnDestroy {
             case 'login':
               this.messages.push(`Login result: ${data['result']}`);
                if (data['error']) {
-                alert(`Move error: ${data['error_message']}`);
+                alert(`Login error: ${data['error_message']}`);
                 break;
               }
               this.command_login(data['result']);

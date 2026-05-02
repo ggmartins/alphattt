@@ -99,6 +99,7 @@ class DB:
         print(f"Moving user: {message}")
 
         with Session(self.engine) as sessionsql:
+            
             statement = select(Sessions).where(Sessions.SessionID == message['session_id'])
             row = sessionsql.exec(statement).first()
             session = row[0] if row else None
@@ -107,6 +108,12 @@ class DB:
                 print(f"Session {message['session_id']} not found.")
                 return False, f"Session {message['session_id']} not found.", None
 
+            player1id = sessionsql.exec(
+                    select(Players.PlayerName).where(Players.PlayerID == session.Player1ID)
+                ).first()[0]
+            player2id = sessionsql.exec(
+                    select(Players.PlayerName).where(Players.PlayerID == session.Player2ID)
+                ).first()[0]
             # Update status
             print(f">>>Updating status for session: {session.SessionID}")
             status = sessionsql.get(Status, session.StatusID)
@@ -128,7 +135,10 @@ class DB:
             
             print(f"OLD DATA: {status.Data['board']}")
             player_as = "X" if session.Player1ID == message['player_id'] else "O"
+            opponent_as = "O" if session.Player1ID == message['player_id'] else "X"
             move_count = status.MoveCount + 1
+            next_turn = player2id + ":" + opponent_as \
+                if session.NextTurn == session.Player1ID else player1id + ":" + player_as
             board = [row[:] for row in status.Data['board']]
             board[message['row']][message['col']] = player_as
             print(f"NEW DATA: {board}")
@@ -144,6 +154,7 @@ class DB:
                     'row': message['row'],
                     'col': message['col']
                 },
+                'next_turn': next_turn,
                 'winner': winner if winner != -1 else status.Data.get('winner')
             }
             new_status = Status(
