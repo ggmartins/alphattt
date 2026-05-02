@@ -28,6 +28,8 @@ export class AppComponent implements OnInit, OnDestroy {
   connected = false;
   showBoard = false;
 
+  turn: 'X' | 'O' = 'X';
+
   board: TicTacToeBoard = [
     [null, null, null],
     [null, null, null],
@@ -126,6 +128,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.board = sessionBoard;
       this.playingAs = session.playingAs;
       this.playerId = session.playerId;
+      this.turn = session.nextTurn.split(":")[1] as 'X' | 'O';
       console.log(`Playing as: ${this.playingAs}`)
     }
 

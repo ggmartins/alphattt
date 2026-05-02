@@ -30,6 +30,8 @@ export class TicTacToeBoardComponent {
 
   @Input() sessionid = '';
 
+  @Input() turn: 'X' | 'O' = 'X';
+
   /**
    * When true, the board launches over the entire browser screen.
    */

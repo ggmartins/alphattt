@@ -200,12 +200,14 @@ class DB:
         ss : SessionStatus
 
         with Session(self.engine) as sessionsql:
+            playing_as = "X" if session.Player1ID == playerid else "O"
+            opponent_as = "O" if session.Player1ID == playerid else "X"
             opponentid = session.Player2ID if session.Player1ID == playerid else session.Player1ID
             player_id = session.Player1ID if session.Player1ID == playerid else session.Player2ID
             vsplayer = sessionsql.exec(select(Players.PlayerName).where(Players.PlayerID == opponentid)).first()[0]
-            next_turn = username
+            next_turn = f"{username}:{playing_as}"
             if session.NextTurn != playerid:
-                next_turn = vsplayer
+                next_turn = f"{vsplayer}:{opponent_as}"
 
             status = sessionsql.get(Status, session.StatusID)
             ss = SessionStatus(
@@ -215,7 +217,7 @@ class DB:
                 session.IsFinished,
                 status.Data,
                 str(status.TS),
-                "X" if session.Player1ID == playerid else "O",
+                playing_as,
                 next_turn
             )
             return ss
