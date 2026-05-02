@@ -105,6 +105,14 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  command_move(result: Record<string, any>) {
+    if (result['error']) {
+      this.messages.push(`Login error: ${result['error_message']}`);
+      return;
+    }
+    this.board = result['data']['board'];
+  }
+
   onLaunchMatch(sessionId: number): void {
     this.websocketService.sendMessage(
       JSON.stringify({ command: 'launch', session_id: sessionId })
@@ -158,6 +166,10 @@ export class AppComponent implements OnInit, OnDestroy {
         switch (data['command']) {
             case 'login':
               this.messages.push(`Login result: ${data['result']}`);
+               if (data['error']) {
+                alert(`Move error: ${data['error_message']}`);
+                break;
+              }
               this.command_login(data['result']);
               break;
             case 'invite':
@@ -167,7 +179,9 @@ export class AppComponent implements OnInit, OnDestroy {
               this.messages.push(`Move result: ${data['result']}`);
               if (data['error']) {
                 alert(`Move error: ${data['error_message']}`);
+                break;
               }
+              this.command_move(data['result']);
               break;
             case 'launch':
               this.messages.push(`Launch received.`);

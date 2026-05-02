@@ -1,8 +1,9 @@
 from __future__ import annotations
+from datetime import datetime
 from db.models import Players, Status, Sessions
 from utils import singleton
 import json
-from sqlalchemy import select, or_
+from sqlalchemy import func, select, or_
 from sqlmodel import Session, create_engine
 
 #### DB API ####
@@ -43,7 +44,6 @@ class SessionStatus:
             'playing_as': self._playing_as,
             'next_turn': self._next_turn
         }
-
 
 @singleton
 class DB:
@@ -95,7 +95,7 @@ class DB:
 
         return True, None, -1
 
-    def move_user(self, message: dict) -> tuple[bool, str | None]:
+    def move_user(self, message: dict) -> tuple[bool, str | None, dict | None]:
         print(f"Moving user: {message}")
 
         with Session(self.engine) as sessionsql:
@@ -105,11 +105,14 @@ class DB:
 
             if not session:
                 print(f"Session {message['session_id']} not found.")
-                return False, f"Session {message['session_id']} not found."
+                return False, f"Session {message['session_id']} not found.", None
 
             # Update status
             print(f">>>Updating status for session: {session.SessionID}")
             status = sessionsql.get(Status, session.StatusID)
+            if not status:
+                print(f"Status {session.StatusID} not found.")
+                return False, f"Status {session.StatusID} not found.", None
 
             ok, msg, winner = self.validate_move(
                 data=status.Data,
@@ -121,28 +124,45 @@ class DB:
 
             if not ok:
                 print(f"Move validation failed: {msg}")
-                return ok, msg
+                return ok, msg, None
             
             print(f"OLD DATA: {status.Data['board']}")
             player_as = "X" if session.Player1ID == message['player_id'] else "O"
             move_count = status.MoveCount + 1
-            data = status.Data['board']
-            data[message['row']][message['col']] = player_as
-            print(f"NEW DATA: {data}")
+            board = [row[:] for row in status.Data['board']]
+            board[message['row']][message['col']] = player_as
+            print(f"NEW DATA: {board}")
 
-            newstatus = Status(Data=data,
-                               MoveCount=move_count,
-                               SessionID=session.SessionID)
-            sessionsql.add(newstatus)
-            sessionsql.commit()
+            max_status_id_row = sessionsql.exec(select(func.max(Status.StatusID))).first()
+            max_status_id = max_status_id_row[0] if max_status_id_row else 0
+            new_status_id = (max_status_id or 0) + 1
+            new_status_data = {
+                **status.Data,
+                'board': board,
+                'lastMove': {
+                    'playerId': message['player_id'],
+                    'row': message['row'],
+                    'col': message['col']
+                },
+                'winner': winner if winner != -1 else status.Data.get('winner')
+            }
+            new_status = Status(
+                StatusID=new_status_id,
+                Data=new_status_data,
+                MoveCount=move_count,
+                SessionID=session.SessionID,
+                TS=datetime.now()
+            )
+            sessionsql.add(new_status)
+            sessionsql.flush()
 
             # Update session
             session.NextTurn = session.Player2ID if session.NextTurn == session.Player1ID else session.Player1ID
-            session.StatusID = newstatus.StatusID
+            session.StatusID = new_status.StatusID
             sessionsql.add(session)
             sessionsql.commit()
 
-        return True, None
+        return True, None, new_status_data
 
 
     # Get Sessions filtered by login userid
