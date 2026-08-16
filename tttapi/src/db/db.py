@@ -182,8 +182,10 @@ class DB:
 
         with Session(self.engine) as sessionsql:
             playerid = sessionsql.exec(
-                    select(Players.PlayerID).where(Players.PlayerName == username)
-                )
+                    select(Players.PlayerID).
+                        where(Players.PlayerName == username)
+                ).scalars().one_or_none()
+            print(f"Player ID for {username}: {playerid}")
             if playerid:
                 playerid = playerid.first()[0]
             else:

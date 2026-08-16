@@ -1,6 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # dependencies = [
+#   "cryptography",
 #   "fastapi==0.136.1",
 #   "pymysql==1.1.2",
 #   "sqlalchemy==2.0.49",
@@ -13,7 +14,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
-__version__ = "1.0.0a3"
+__version__ = "1.0.0a4"
 
 from db.db import DB
 from controller import Controller
