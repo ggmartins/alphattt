@@ -13,6 +13,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
+__version__ = "1.0.0a3"
+
 from db.db import DB
 from controller import Controller
 
@@ -33,7 +35,6 @@ db_connection_string = \
 print(f"DB Connection String: {db_connection_string}")
 db = DB(db_connection_string)
 
-
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -45,15 +46,15 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return HTMLResponse(""" 
+    return HTMLResponse(f""" 
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Alpha TTT Board API</title>
+                <title>Alpha TTT Board API v.{__version__}</title>
             </head>
             <body>
                 <H1>
-                <a href="/docs">Alpha TTT Board API</a>
+                <a href="/docs">Alpha TTT Board API v.{__version__}</a>
                 </H1>
             </body>
             </html>
@@ -92,6 +93,13 @@ def parse_args() -> argparse.Namespace:
         help="Check DB",
     )
 
+    parser.add_argument(
+        "--port",
+        default="8000",
+        help="TCP Port to use.",
+    )
+
+
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -100,7 +108,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "app:app",
         host="0.0.0.0",
-        port=8000,
+        port=int(args.port),
     )
 
 
