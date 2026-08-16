@@ -4,10 +4,10 @@ services:
   mysql-service:
     image: "${MYSQL_IMAGE:-mysql:9.7.0}"
     environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-***REMOVED***}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
       MYSQL_DATABASE: "${MYSQL_DATABASE:-***REMOVED***}"
       MYSQL_USER: "${MYSQL_USER:-***REMOVED***}"
-      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-***REMOVED***}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
@@ -29,7 +29,7 @@ services:
       DB_PORT: "3306"
       DB_NAME: "${MYSQL_DATABASE:-***REMOVED***}"
       DB_USER: "${MYSQL_USER:-***REMOVED***}"
-      DB_PASSWORD: "${MYSQL_PASSWORD:-***REMOVED***}"
+      DB_PASSWORD: "${MYSQL_PASSWORD}"
     depends_on:
       mysql-service:
         condition: service_healthy
