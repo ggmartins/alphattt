@@ -10,6 +10,9 @@
 # ]
 # ///
 
+import sys
+import logging
+import traceback
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -24,6 +27,17 @@ import json
 import uvicorn
 import argparse
 
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format=(
+        "%(asctime)s %(levelname)s %(name)s "
+        "event=%(event)s %(message)s"
+    ),
+)
+logger = logging.getLogger(__name__)
+
+
 app = FastAPI()
 
 #MySQL sqlmodel sql alchemy Connect String with os.getenv("DB_HOST")
@@ -33,7 +47,10 @@ db_connection_string = \
     f"{os.getenv('DB_PASSWORD')}" + \
     f"@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
 
-print(f"DB Connection String: {db_connection_string}")
+logger.info(f"DB Connection String: " + \
+            f"mysql+pymysql://...%s/%s ", os.getenv("DB_HOST"), os.getenv("DB_NAME"),
+            extra={"event": "db_connection_string"})
+
 db = DB(db_connection_string)
 
 # Add CORS middleware
@@ -63,21 +80,29 @@ def read_root():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    client = websocket.client
+    source_ip : str = client.host if client else "unknown"
+    source_port : int = client.port if client else None
     await websocket.accept()
     controller : Controller = Controller(db)
     try:
         while True:
             data = await websocket.receive_text()
-            print(f"Echoing: {data}")
+            logger.info(f"Echoing: %s", data, extra={"event": "websocket_echo"})
             if not controller:
-                print("Controller is not initialized")
+                logger.warning("Controller is not initialized",
+                    extra={"event": "websocket_controller_not_initialized"}
+                )
                 continue
-            result = await controller.handle_websocket_message(data)
+            result = await controller.handle_websocket_message(data, source_ip, source_port)
             await websocket.send_text(f"{json.dumps({'echo': data})}")
             await websocket.send_text(f"{json.dumps(result)}")
 
     except WebSocketDisconnect as wsd:
-        print(f"Client disconnected: {wsd}")
+        logger.info(f"Client disconnected: %s (%s:%s)",
+            wsd, source_ip, source_port,
+            extra={"event": "websocket_disconnect"}
+        )
 
 @app.get("/health")
 def health():

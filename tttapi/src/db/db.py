@@ -1,10 +1,23 @@
 from __future__ import annotations
+import sys
+import logging
 from datetime import datetime
 from db.models import Players, Status, Sessions
 from utils import singleton
 import json
 from sqlalchemy import func, select, or_
 from sqlmodel import Session, create_engine
+
+logging.basicConfig(
+    level=logging.INFO,
+    stream=sys.stdout,
+    format=(
+        "%(asctime)s %(levelname)s %(name)s "
+        "event=%(event)s %(message)s"
+    ),
+)
+
+logger = logging.getLogger(__name__)
 
 #### DB API ####
 
@@ -50,7 +63,7 @@ class DB:
 
     ### Singleton pattern
     def __init__(self, connection_string: str):
-        print("Initializing DB...")
+        logger.info("Initializing DB...", extra={"event": "db_init"})
         self.engine = create_engine(connection_string)
 
     def get_session(self):
@@ -59,31 +72,41 @@ class DB:
     def validate_move(self, data, next_turn: str,
                                         player_id: int,
                                         col:int, row: int) -> tuple[bool, str | None, int]:
-        print(
-            f"Validating move: {data}, Next turn: {next_turn}, Player ID: {player_id}, Column: {col}, Row: {row}"
+        logger.info(
+            "Validating move: %s, Next turn: %s, Player ID: %s, Column: %s, Row: %s",
+            data,
+            next_turn,
+            player_id,
+            col,
+            row,
+            extra={"event": "move_validation"}
         )
         if next_turn != player_id:
-            print("Not your turn.")
+            logger.debug("Not your turn.", extra={"event": "move_not_your_turn"})
             return False, "Not your turn.", -1
 
         if data['board'][row][col] is not None:
-            print("Position already occupied.")
+            logger.debug("Position already occupied.", extra={"event": "move_position_occupied"})
             return False, "Position already occupied.", -1
         
         for i in range(len(data['board'])):
             if data['board'][i][0]=='X' and data['board'][i][1]=='X' and data['board'][i][2]=='X':
+                logger.debug("Game Over: Player X wins.", extra={"event": "game_over"})
                 return True, "Game Over", player_id
                 
         for i in range(len(data['board'])):
             if data['board'][i][0]=='O' and data['board'][i][1]=='O' and data['board'][i][2]=='O':
+                logger.debug("Game Over: Player O wins.", extra={"event": "game_over"})
                 return True, "Game Over", player_id     
 
         for i in range(len(data['board'])):
             if data['board'][0][i]=='X' and data['board'][1][i]=='X' and data['board'][2][i]=='X':
+                logger.debug("Game Over: Player X wins.", extra={"event": "game_over"})
                 return True, "Game Over", player_id  
 
         for i in range(len(data['board'])):
             if data['board'][0][i]=='O' and data['board'][1][i]=='O' and data['board'][2][i]=='O':
+                logger.debug("Game Over: Player O wins.", extra={"event": "game_over"})
                 return True, "Game Over", player_id  
 
         if data['board'][0][0]=='X' and data['board'][1][1]=='X' and data['board'][2][2]=='X':
@@ -108,12 +131,20 @@ class DB:
                 print(f"Session {message['session_id']} not found.")
                 return False, f"Session {message['session_id']} not found.", None
 
-            player1id = sessionsql.exec(
+            player1id_result = sessionsql.exec(
                     select(Players.PlayerName).where(Players.PlayerID == session.Player1ID)
-                ).first()[0]
-            player2id = sessionsql.exec(
+                )
+            if player1id_result.first() is None:
+                print(f"Player 1 with ID {session.Player1ID} not found.")
+                return False, f"Player 1 with ID {session.Player1ID} not found.", None
+            player1id = player1id_result.first()[0]
+            player2id_result = sessionsql.exec(
                     select(Players.PlayerName).where(Players.PlayerID == session.Player2ID)
-                ).first()[0]
+                )
+            if player2id_result.first() is None:
+                print(f"Player 2 with ID {session.Player2ID} not found.")
+                return False, f"Player 2 with ID {session.Player2ID} not found.", None
+            player2id = player2id_result.first()[0]
             # Update status
             print(f">>>Updating status for session: {session.SessionID}")
             status = sessionsql.get(Status, session.StatusID)
@@ -177,19 +208,21 @@ class DB:
 
 
     # Get Sessions filtered by login userid
-    def get_user_sessions(self, username: str) -> list[Sessions]:
-        print(f"Looking for user sessions for: {username}")
+    def get_user_sessions(self, username: str) -> tuple[bool, list[Sessions]]:
+        logger.info(f"Looking for user sessions for: {username}", extra={"event": "get_user_sessions"})
 
         with Session(self.engine) as sessionsql:
-            playerid = sessionsql.exec(
+            playerid_result = sessionsql.exec(
                     select(Players.PlayerID).
                         where(Players.PlayerName == username)
-                ).scalars().one_or_none()
-            print(f"Player ID for {username}: {playerid}")
-            if playerid:
-                playerid = playerid.first()[0]
+                )
+            
+            if playerid_result:
+                playerid = playerid_result.scalars().one_or_none()
             else:
                 raise ValueError(f"Player {username} not found.")
+
+            logger.info(f"Player ID for {username}: {playerid}", extra={"event": "get_user_sessions"})
 
             statement = select(Sessions).where( or_(
                 Sessions.Player1ID == playerid,
@@ -203,11 +236,10 @@ class DB:
 
             results = []
             for session in sessions:
-                print(f"Session found: {session[0]}")
                 results.append(self.get_sessionstatus(playerid, username, session[0])
                                    .to_dict())
 
-            return results
+            return (True,results) if len(results) > 0 else (False, results)
 
     def get_sessionstatus(self, playerid: int, username: str, session: Sessions) -> SessionStatus:
         ss : SessionStatus
