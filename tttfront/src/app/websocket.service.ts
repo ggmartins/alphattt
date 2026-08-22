@@ -12,6 +12,18 @@ export class WebsocketService {
     onClose?: () => void,
     onError?: (error: Event) => void
   ): void {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      onOpen?.();
+      return;
+    }
+
+    if (this.socket?.readyState === WebSocket.CONNECTING) {
+      if (onOpen) {
+        this.socket.addEventListener('open', onOpen, { once: true });
+      }
+      return;
+    }
+
     this.socket = new WebSocket('ws://localhost:8000/ws');
 
     this.socket.onopen = () => {
@@ -38,6 +50,10 @@ export class WebsocketService {
         onError(error);
       }
     };
+  }
+
+  isConnected(): boolean {
+    return this.socket?.readyState === WebSocket.OPEN;
   }
 
   sendMessage(message: string): void {

@@ -44,7 +44,30 @@ export class AppComponent implements OnInit, OnDestroy {
     @Inject(PLATFORM_ID) private platformId: object
   ) {}
 
+  getLoggedIn(): string | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+
+    const ttt_player_id: string | null = localStorage.getItem('ttt_player_id');
+    if (ttt_player_id === '' || ttt_player_id === 'undefined') {
+      return null;
+    }
+    return ttt_player_id;
+  }
+
   ngOnInit(): void {
+    this.connectWebSocket(() => {
+      const ttt_player_id = this.getLoggedIn();
+      console.log(`ngOnInit: ttt_player_id: ${ttt_player_id}`);
+      if (ttt_player_id) {
+        this.login = ttt_player_id;
+        this.sendLogin();
+      }
+    });
+  }
+
+  private connectWebSocket(onConnected?: () => void): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
@@ -55,6 +78,7 @@ export class AppComponent implements OnInit, OnDestroy {
       },
       () => {
         this.connected = true;
+        onConnected?.();
       },
       () => {
         this.connected = false;
@@ -89,10 +113,16 @@ export class AppComponent implements OnInit, OnDestroy {
       })
     );
   }
+
   command_login(result: Record<string, any>) {
     if (result['error']) {
-      this.messages.push(`Login error: ${result['error_message']}`);
+      console.log(`Login error: ${result['error_message']}`);
       return;
+    }
+
+    if (isPlatformBrowser(this.platformId)) {
+      //alert(`Login successful. Player ID: ${this.login}`);
+      localStorage.setItem('ttt_player_id', this.login);
     }
 
     if (result['data']) {
@@ -169,7 +199,7 @@ export class AppComponent implements OnInit, OnDestroy {
         const data = JSON.parse(message);
         switch (data['command']) {
             case 'login':
-              this.messages.push(`Login result: ${data['result']}`);
+              this.messages.push(`Login result: (${data['error'] ? 'Error' : 'Success'}) ${data['message']}`);
                if (data['error']) {
                 alert(`Login error: ${data['error_message']}`);
                 break;
@@ -220,7 +250,36 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.websocketService.sendMessage(`{ "command": "login", "username": "${trimmed}" }`);
+    const send = () => {
+      this.websocketService.sendMessage(
+        JSON.stringify({ command: 'login', username: trimmed })
+      );
+    };
+
+    if (this.websocketService.isConnected()) {
+      this.connected = true;
+      send();
+      return;
+    }
+
+    this.connected = false;
+    this.connectWebSocket(send);
+  }
+
+  sendLoginOrLogout(): void {
+    if (this.getLoggedIn()) {
+      this.sendLogout();
+    } else {
+      this.sendLogin();
+    }
+  }
+
+  sendLogout(): void {
+    this.websocketService.sendMessage(`{ "command": "logout" }`);
+    this.login = '';
+    localStorage.removeItem('ttt_player_id');
+    this.sessions = [];
+    this.messages = [];
   }
 
   sendInvite(): void {

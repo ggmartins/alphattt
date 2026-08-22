@@ -3,7 +3,7 @@ import traceback
 import logging
 from utils import singleton
 from db.db import DB
-from apimodels import validate_login_message
+from apimodels import validate_login_message, validate_logout_message
 import json
 
 logging.basicConfig(
@@ -25,7 +25,7 @@ class Controller:
     def __init__(self, db: DB):
         self._db = db
     
-    async def command_login(self, message: str) -> dict | None:
+    async def command_login(self, message: dict) -> dict | None:
         result = { 'command': 'login', 'error': False, 'message': None }
 
         is_valid, validated_message = validate_login_message(message)
@@ -57,12 +57,12 @@ class Controller:
 
         return validated_message
 
-    async def command_launch(self, message: str) -> dict | None:
+    async def command_launch(self, message: dict) -> dict | None:
         result = { 'command': 'launch', 'error': False, 'message': None }
-        print(f"Launch command received: {message}.")
+        print(f"Launch command received: {str(message)}.")
         return result
     
-    async def command_move(self, message: str) -> dict | None:
+    async def command_move(self, message: dict) -> dict | None:
         result = { 'command': 'move', 'error': False, 'message': None }
         try:
             ok, msg, data = self._db.move_user(message)
@@ -79,10 +79,26 @@ class Controller:
 
         result['result'] = { 'data': data }
         return result
+    
+    async def command_logout(self, message: dict) -> dict | None:
+        result = { 'command': 'logout', 'error': False, 'message': 'Goodbye' }
 
-    async def handle_websocket_message(self, message: str, source_ip: str, source_port: int) -> dict | None:
+        is_valid, validated_message = validate_logout_message(message)
+        if not is_valid:
+            logger.warning(
+                "Logout request rejected: %s",
+                validated_message.get("message", "validation failed"),
+                extra={"event": "logout_validation_failed"},
+            )
+            return validated_message
+        logger.info(f"Logout command received: %s.", str(message), extra={"event": "logout_command_received"})
+        return result
+
+    async def handle_websocket_message(self, message: str, source_ip: str,
+                                                           source_port: int) -> tuple[dict | None, bool]:
         commands = {
             'login': self.command_login,
+            'logout': self.command_logout,
             'launch': self.command_launch,
             'move': self.command_move
         }
@@ -101,7 +117,11 @@ class Controller:
 
         command = commands.get(data.get("command"), lambda: "Invalid command")
 
-        logger.info(f"Calling function: [{data.get('command')}] from {source_ip}:{source_port}",
-            extra={"event": "websocket_command_call"})    
+        logger.info(f"Calling function: [%s] from %s:%s", data.get('command'),
+                    source_ip, source_port,
+                    extra={"event": "websocket_command_call"})
         
-        return await command(data)
+        if data.get("command") == "logout":
+            return await command(data), True 
+        
+        return await command(data), False

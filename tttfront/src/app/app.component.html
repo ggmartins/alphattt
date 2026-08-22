@@ -9,8 +9,8 @@
       (keyup.enter)="sendLogin()"
     />
 
-    <button type="button" (click)="sendLogin()">
-      Login
+    <button type="button" (click)="sendLoginOrLogout()">
+      {{ getLoggedIn() ? 'Logout' : 'Login' }}
     </button>
   </div>
 

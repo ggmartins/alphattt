@@ -94,15 +94,27 @@ async def websocket_endpoint(websocket: WebSocket):
                     extra={"event": "websocket_controller_not_initialized"}
                 )
                 continue
-            result = await controller.handle_websocket_message(data, source_ip, source_port)
+
+            result, close = await controller.handle_websocket_message(data, source_ip, source_port)
+
+            if close:
+                await websocket_close(websocket)
+                break
+
             await websocket.send_text(f"{json.dumps({'echo': data})}")
             await websocket.send_text(f"{json.dumps(result)}")
 
     except WebSocketDisconnect as wsd:
         logger.info(f"Client disconnected: %s (%s:%s)",
-            wsd, source_ip, source_port,
+            str(wsd), source_ip, source_port,
             extra={"event": "websocket_disconnect"}
         )
+
+async def websocket_close(websocket: WebSocket) -> None:
+    await websocket.close()
+    logger.info(f"WebSocket close commanded %s:%s", websocket.client.host, websocket.client.port,
+        extra={"event": "websocket_close"}
+    )
 
 @app.get("/health")
 def health():
