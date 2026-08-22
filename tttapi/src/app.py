@@ -63,7 +63,7 @@ app.add_middleware(
 )
 
 @app.get("/")
-def read_root():
+def read_root() -> HTMLResponse:
     return HTMLResponse(f""" 
             <!DOCTYPE html>
             <html>
@@ -79,7 +79,7 @@ def read_root():
         """)
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
     client = websocket.client
     source_ip : str = client.host if client else "unknown"
     source_port : int = client.port if client else None
@@ -117,7 +117,7 @@ async def websocket_close(websocket: WebSocket) -> None:
     )
 
 @app.get("/health")
-def health():
+def health() -> dict:
     return {"status": "ok"}
 
 def parse_args() -> argparse.Namespace:
