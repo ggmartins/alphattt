@@ -3,7 +3,7 @@ import traceback
 import logging
 from utils import singleton
 from db.db import DB
-from apimodels import validate_login_message, validate_logout_message
+from apimodels import LoginRequest, LogoutRequest, validate_message
 import json
 
 logging.basicConfig(
@@ -26,25 +26,32 @@ class Controller:
         self._db = db
     
     async def command_login(self, message: dict) -> dict | None:
-        result = { 'command': 'login', 'error': False, 'message': None }
-
-        is_valid, validated_message = validate_login_message(message)
-        if not is_valid:
+        request, validation_error = validate_message(message, LoginRequest)
+        if validation_error:
             logger.warning(
                 "Login request rejected: %s",
-                validated_message.get("message", "validation failed"),
+                validation_error.get("message", "validation failed"),
                 extra={"event": "login_validation_failed"},
             )
-            return validated_message
+            return validation_error
+
+        assert request is not None
 
         try:
-            ok, resultdata = self._db.get_user_sessions(message['username'])
+            ok, resultdata = self._db.get_user_sessions(request.username)
             if not ok:
-                validated_message['error'] = True
-                validated_message['message'] = f"No sessions found for user {message['username']}."
-            else:
-                validated_message['message'] = f"User {message['username']} logged in successfully."
-                validated_message['result'] = { 'data': resultdata }
+                return {
+                    'command': 'login',
+                    'error': True,
+                    'message': f"No sessions found for user {request.username}.",
+                }
+
+            return {
+                'command': 'login',
+                'error': False,
+                'message': f"User {request.username} logged in successfully.",
+                'result': {'data': resultdata},
+            }
         except Exception as e:
             logger.error(
                 "ERROR: Exception command_login: %s",
@@ -52,10 +59,11 @@ class Controller:
                 extra={"event": "login_exception"},
             )
             traceback.print_exc()
-            validated_message['error'] = True
-            validated_message['message'] = str(e)
-
-        return validated_message
+            return {
+                'command': 'login',
+                'error': True,
+                'message': str(e),
+            }
 
     async def command_launch(self, message: dict) -> dict | None:
         result = { 'command': 'launch', 'error': False, 'message': None }
@@ -81,18 +89,18 @@ class Controller:
         return result
     
     async def command_logout(self, message: dict) -> dict | None:
-        result = { 'command': 'logout', 'error': False, 'message': 'Goodbye' }
-
-        is_valid, validated_message = validate_logout_message(message)
-        if not is_valid:
+        request, validation_error = validate_message(message, LogoutRequest)
+        if validation_error:
             logger.warning(
                 "Logout request rejected: %s",
-                validated_message.get("message", "validation failed"),
+                validation_error.get("message", "validation failed"),
                 extra={"event": "logout_validation_failed"},
             )
-            return validated_message
+            return validation_error
+
+        assert request is not None
         logger.info(f"Logout command received: %s.", str(message), extra={"event": "logout_command_received"})
-        return result
+        return { 'command': request.command, 'error': False, 'message': 'Goodbye' }
 
     async def handle_websocket_message(self, message: str, source_ip: str,
                                                            source_port: int) -> tuple[dict | None, bool]:

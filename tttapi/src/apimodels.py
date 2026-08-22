@@ -1,6 +1,5 @@
-import logging
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal, Mapping, TypeVar
 
 from pydantic import (
     BaseModel,
@@ -55,58 +54,26 @@ class LoginFailure(APIModel):
 
 LoginResponse = LoginSuccess | LoginFailure
 
-def validate_login_message(message: str) -> tuple[bool, LoginResponse]:
-    """
-    Validate the login message and return a tuple of (is_valid, response).
-    If the message is valid, is_valid will be True and response will be a LoginSuccess object.
-    If the message is invalid, is_valid will be False and response will be a LoginFailure object with an error message. 
+RequestModel = TypeVar("RequestModel", bound=APIModel)
+Message = str | Mapping[str, Any]
 
-    Returns:
-        tuple[bool, LoginResponse]: A tuple containing a boolean indicating if the message is valid
-        and a LoginResponse object (either LoginSuccess or LoginFailure).
-    """
+
+def validate_message(
+    message: Message,
+    model: type[RequestModel],
+) -> tuple[RequestModel | None, dict[str, Any] | None]:
+    """Validate a WebSocket message against any API request model."""
     try:
         if isinstance(message, str):
-            request = LoginRequest.model_validate_json(message)
+            request = model.model_validate_json(message)
         else:
-            request = LoginRequest.model_validate(message)
-
-    except ValidationError as ve:
-        return False, LoginFailure(
-            command="login",
-            error=True,
-            message=f"(Validation error, {ve})"
-        ).model_dump(mode="json")
-    
-    return True, LoginSuccess(
-        command="login",
-        error=False,
-        message="Login Request validated.",
-        result=LoginResult(data=[])
-    ).model_dump(mode="json")
-
-
-def validate_logout_message(message: str) -> tuple[bool, LogoutRequest | dict]:
-    """
-    Validate the logout message and return a tuple of (is_valid, response).
-    If the message is valid, is_valid will be True and response will be a LogoutRequest object.
-    If the message is invalid, is_valid will be False and response will be a dict with an error message. 
-
-    Returns:
-        tuple[bool, LogoutRequest | dict]: A tuple containing a boolean indicating if the message is valid
-        and a LogoutRequest object or a dict with an error message.
-    """
-    try:
-        if isinstance(message, str):
-            request = LogoutRequest.model_validate_json(message)
-        else:
-            request = LogoutRequest.model_validate(message)
-
-    except ValidationError as ve:
-        return False, {
-            "command": "logout",
+            request = model.model_validate(message)
+    except ValidationError as error:
+        command = message.get("command", "unknown") if not isinstance(message, str) else "unknown"
+        return None, {
+            "command": command,
             "error": True,
-            "message": f"(Validation error, {ve})"
+            "message": f"Validation error: {error}",
         }
-    
-    return True, request
+
+    return request, None
