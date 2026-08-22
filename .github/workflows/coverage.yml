@@ -29,8 +29,13 @@ jobs:
 
       - name: Run tests with coverage
         working-directory: tttapi
+        env:
+          PYTHONPATH: src
         run: |
-          pytest --cov-report=xml:coverage.xml
+          python -m pytest src/test \
+            --cov=apimodels \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
@@ -38,4 +43,3 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./tttapi/coverage.xml
           fail_ci_if_error: true
-
