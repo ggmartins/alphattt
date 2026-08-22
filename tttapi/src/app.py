@@ -102,7 +102,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 break
 
             await websocket.send_text(f"{json.dumps({'echo': data})}")
-            await websocket.send_text(f"{json.dumps(result)}")
+            if result is not None:
+                await websocket.send_text(f"{json.dumps(result)}")
 
     except WebSocketDisconnect as wsd:
         logger.info(f"Client disconnected: %s (%s:%s)",

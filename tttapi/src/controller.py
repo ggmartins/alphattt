@@ -121,7 +121,7 @@ class Controller:
                 message,
                 extra={"event": "websocket_invalid_json"},
             )
-            return
+            return None, False
 
         command = commands.get(data.get("command"), lambda: "Invalid command")
 
