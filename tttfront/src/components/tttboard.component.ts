@@ -19,6 +19,7 @@ export interface TicTacToeMoveEvent {
   templateUrl: './tttboard.component.html',
   styleUrls: ['./tttboard.component.css']
 })
+
 export class TicTacToeBoardComponent {
   @Input() board: TicTacToeBoard = [
     [null, null, null],
@@ -31,6 +32,8 @@ export class TicTacToeBoardComponent {
   @Input() sessionid = '';
 
   @Input() turn: 'X' | 'O' = 'X';
+
+  @Input() winner: 'X' | 'O' | null = null;
 
   /**
    * When true, the board launches over the entire browser screen.

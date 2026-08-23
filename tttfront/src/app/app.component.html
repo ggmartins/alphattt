@@ -49,8 +49,10 @@
     [board]="board"
     [player]="playingAs"
     [turn]="turn"
+    [winner]="winner"
     [sessionid]="sessionid"
     [fullscreen]="true"
+    [disabled]="winner !== null"
     (move)="onMove($event)"
     (close)="closeBoard()"
   >

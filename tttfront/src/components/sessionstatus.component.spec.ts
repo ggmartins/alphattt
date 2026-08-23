@@ -53,10 +53,6 @@ describe('SessionStatusComponent', () => {
     expect(component.statusLabel).toBe('Not Launched');
   });
 
-  it('should allow launch when status is not_launched', () => {
-    expect(component.canLaunch).toBeTrue();
-  });
-
   it('should emit session id when launch button is clicked', () => {
     spyOn(component.launchMatch, 'emit');
 
@@ -65,7 +61,7 @@ describe('SessionStatusComponent', () => {
     expect(component.launchMatch.emit).toHaveBeenCalledWith(10);
   });
 
-  it('should not emit launch event when match is ongoing', () => {
+  it('should emit launch event when match is ongoing', () => {
     spyOn(component.launchMatch, 'emit');
 
     component.session = {
@@ -75,10 +71,10 @@ describe('SessionStatusComponent', () => {
 
     component.onLaunchClick();
 
-    expect(component.launchMatch.emit).not.toHaveBeenCalled();
+    expect(component.launchMatch.emit).toHaveBeenCalledWith(10);
   });
 
-  it('should disable launch button when match is finished', () => {
+  it('should keep launch button enabled when match is finished', () => {
     component.session = {
       ...mockSession,
       status: 'finished',
@@ -90,6 +86,6 @@ describe('SessionStatusComponent', () => {
       'button'
     ) as HTMLButtonElement;
 
-    expect(button.disabled).toBeTrue();
+    expect(button.disabled).toBeFalse();
   });
 });

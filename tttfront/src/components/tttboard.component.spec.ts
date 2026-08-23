@@ -20,6 +20,7 @@ describe('TicTacToeBoardComponent', () => {
       [null, 'O', null],
       [null, null, 'X']
     ];
+    component.winner = 'X';
 
     fixture.detectChanges();
   });

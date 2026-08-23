@@ -36,15 +36,7 @@ export class SessionStatusComponent {
     }
   }
 
-  get canLaunch(): boolean {
-    return this.session.status === 'not_launched';
-  }
-
   onLaunchClick(): void {
-    if (!this.canLaunch) {
-      return;
-    }
-
     this.launchMatch.emit(this.session.sessionId);
   }
 }

@@ -81,128 +81,161 @@ class DB:
             row,
             extra={"event": "move_validation"}
         )
-        if next_turn != player_id:
-            logger.debug("Not your turn.", extra={"event": "move_not_your_turn"})
-            return False, "Not your turn.", -1
 
         if data['board'][row][col] is not None:
             logger.debug("Position already occupied.", extra={"event": "move_position_occupied"})
             return False, "Position already occupied.", -1
-        
-        for i in range(len(data['board'])):
-            if data['board'][i][0]=='X' and data['board'][i][1]=='X' and data['board'][i][2]=='X':
-                logger.debug("Game Over: Player X wins.", extra={"event": "game_over"})
-                return True, "Game Over", player_id
-                
-        for i in range(len(data['board'])):
-            if data['board'][i][0]=='O' and data['board'][i][1]=='O' and data['board'][i][2]=='O':
-                logger.debug("Game Over: Player O wins.", extra={"event": "game_over"})
-                return True, "Game Over", player_id     
 
-        for i in range(len(data['board'])):
-            if data['board'][0][i]=='X' and data['board'][1][i]=='X' and data['board'][2][i]=='X':
-                logger.debug("Game Over: Player X wins.", extra={"event": "game_over"})
-                return True, "Game Over", player_id  
-
-        for i in range(len(data['board'])):
-            if data['board'][0][i]=='O' and data['board'][1][i]=='O' and data['board'][2][i]=='O':
-                logger.debug("Game Over: Player O wins.", extra={"event": "game_over"})
-                return True, "Game Over", player_id  
-
-        if data['board'][0][0]=='X' and data['board'][1][1]=='X' and data['board'][2][2]=='X':
-                return True, "Game Over", player_id 
-
-        if data['board'][0][0]=='O' and data['board'][1][1]=='O' and data['board'][2][2]=='O':
-                return True, "Game Over", player_id 
-
+        if next_turn != player_id:
+            logger.debug("Not your turn.", extra={"event": "move_not_your_turn"})
+            return False, "Not your turn.", -1
 
         return True, None, -1
 
-    def move_user(self, message: dict) -> tuple[bool, str | None, dict | None]:
-        print(f"Moving user: {message}")
+    def determine_winner(self, board: list) -> str | None:
+        winning_lines = [
+            *board, #rows
+            *zip(*board), #columns
+            [board[0][0], board[1][1], board[2][2]], #diagonal 1
+            [board[0][2], board[1][1], board[2][0]], #diagonal 2
+        ]
 
+        #check all the lines for a winner and return first element
+        for line in winning_lines:
+            if line[0] is not None and line[0] == line[1] == line[2]:
+                return line[0]
+
+        return None
+
+    def get_session_and_players(self, session_id: int) -> tuple[bool, str | None, dict | None]:
         with Session(self.engine) as sessionsql:
-            
-            statement = select(Sessions).where(Sessions.SessionID == message['session_id'])
+
+            statement = select(Sessions).where(Sessions.SessionID == session_id)
             row = sessionsql.exec(statement).first()
             session = row[0] if row else None
 
             if not session:
-                print(f"Session {message['session_id']} not found.")
-                return False, f"Session {message['session_id']} not found.", None
+                print(f"Session {session_id} not found.")
+                return False, f"Session {session_id} not found.", None
 
             player1id_result = sessionsql.exec(
                     select(Players.PlayerName).where(Players.PlayerID == session.Player1ID)
                 )
-            if player1id_result.first() is None:
+            player1id = player1id_result.one_or_none()
+            if player1id is None:
                 print(f"Player 1 with ID {session.Player1ID} not found.")
                 return False, f"Player 1 with ID {session.Player1ID} not found.", None
-            player1id = player1id_result.first()[0]
+            player1id = player1id[0] if player1id else None
             player2id_result = sessionsql.exec(
                     select(Players.PlayerName).where(Players.PlayerID == session.Player2ID)
                 )
-            if player2id_result.first() is None:
+            player2id = player2id_result.one_or_none()
+            player2id = player2id[0] if player2id else None
+            if player2id is None:
                 print(f"Player 2 with ID {session.Player2ID} not found.")
                 return False, f"Player 2 with ID {session.Player2ID} not found.", None
-            player2id = player2id_result.first()[0]
-            # Update status
-            print(f">>>Updating status for session: {session.SessionID}")
+
             status = sessionsql.get(Status, session.StatusID)
             if not status:
                 print(f"Status {session.StatusID} not found.")
                 return False, f"Status {session.StatusID} not found.", None
-
-            ok, msg, winner = self.validate_move(
-                data=status.Data,
-                next_turn=session.NextTurn,
-                player_id=message['player_id'],
-                col=message['col'],
-                row=message['row']
-            )
-
-            if not ok:
-                print(f"Move validation failed: {msg}")
-                return ok, msg, None
-            
-            print(f"OLD DATA: {status.Data['board']}")
-            player_as = "X" if session.Player1ID == message['player_id'] else "O"
-            opponent_as = "O" if session.Player1ID == message['player_id'] else "X"
-            move_count = status.MoveCount + 1
-            next_turn = player2id + ":" + opponent_as \
-                if session.NextTurn == session.Player1ID else player1id + ":" + player_as
-            board = [row[:] for row in status.Data['board']]
-            board[message['row']][message['col']] = player_as
-            print(f"NEW DATA: {board}")
-
             max_status_id_row = sessionsql.exec(select(func.max(Status.StatusID))).first()
             max_status_id = max_status_id_row[0] if max_status_id_row else 0
             new_status_id = (max_status_id or 0) + 1
+
+            return True, None, {
+                'session': session,
+                'player1': player1id,
+                'player2': player2id,
+                'status': status,
+                'new_status_id': new_status_id
+            }
+
+    def update_session(self, session_data: dict, move_count: int, next_turn: str,
+                                                                  board: list,
+                                                                  winner: int,
+                                                                  player_id: int,
+                                                                  row: str,
+                                                                  col: str) -> tuple[bool, str | None, dict | None]:
+        with Session(self.engine) as sessionsql:
             new_status_data = {
-                **status.Data,
+                **session_data['status'].Data,
                 'board': board,
                 'lastMove': {
-                    'playerId': message['player_id'],
-                    'row': message['row'],
-                    'col': message['col']
+                    'playerId': player_id,
+                    'row': row,
+                    'col': col
                 },
                 'next_turn': next_turn,
-                'winner': winner if winner != -1 else status.Data.get('winner')
+                'winner': winner if winner != -1 else session_data['status'].Data.get('winner')
             }
             new_status = Status(
-                StatusID=new_status_id,
+                StatusID=session_data['new_status_id'],
                 Data=new_status_data,
                 MoveCount=move_count,
-                SessionID=session.SessionID,
+                SessionID=session_data['session'].SessionID,
                 TS=datetime.now()
             )
             sessionsql.add(new_status)
             sessionsql.flush()
 
             # Update session
-            session.NextTurn = session.Player2ID if session.NextTurn == session.Player1ID else session.Player1ID
-            session.StatusID = new_status.StatusID
-            sessionsql.add(session)
+            session_data['session'].NextTurn = session_data['session'].Player2ID if session_data['session'].NextTurn == session_data['session'].Player1ID else session_data['session'].Player1ID
+            session_data['session'].StatusID = new_status.StatusID
+            sessionsql.add(session_data['session'])
             sessionsql.commit()
+            return True, None, new_status_data
+
+    def move_user(self, message: dict) -> tuple[bool, str | None, dict | None]:
+        logger.info(f"Moving user: {str(message)}", extra={"event": "move_user"})
+
+        ok, msg, session_data = self.get_session_and_players(message['session_id'])
+        if not ok:
+            return ok, msg, None
+
+        ok, msg, winner = self.validate_move(
+            data=session_data['status'].Data,
+            next_turn=session_data['session'].NextTurn,
+            player_id=message['player_id'],
+            col=message['col'],
+            row=message['row']
+        )
+
+        if not ok:
+            logger.warning(f"Move validation failed: %s", msg, extra={"event": "move_validation_failed"})
+            return ok, msg, None
+
+        logger.info(f"OLD DATA: {session_data['status'].Data['board']}", extra={"event": "move_user"})
+        player_as = "X" if session_data['session'].Player1ID == message['player_id'] else "O"
+        opponent_as = "O" if session_data['session'].Player1ID == message['player_id'] else "X"
+        move_count = session_data['status'].MoveCount + 1
+        next_turn = session_data['player2'] + ":" + opponent_as \
+            if session_data['session'].NextTurn == session_data['session'].Player1ID else session_data['player1'] + ":" + player_as
+        board = [row[:] for row in session_data['status'].Data['board']]
+        board[message['row']][message['col']] = player_as
+        logger.info(f"NEW DATA: {board}", extra={"event": "move_user"})
+
+        winner_mark = self.determine_winner(board)
+        if winner_mark == "X":
+            winner = session_data['session'].Player1ID
+        elif winner_mark == "O":
+            winner = session_data['session'].Player2ID
+
+        if winner != -1:
+            logger.info(f"Game Over: Player {winner} wins.", extra={"event": "game_over"})
+            session_data['session'].IsFinished = True
+
+        ok, msg, new_status_data = self.update_session(session_data, move_count,
+                                                    next_turn,
+                                                    board,
+                                                    winner,
+                                                    player_id=message['player_id'],
+                                                    row=message['row'],
+                                                    col=message['col'])
+
+        if not ok:
+            logger.warning(f"Move validation failed: {msg}")
+            return ok, msg, None
 
         return True, None, new_status_data
 

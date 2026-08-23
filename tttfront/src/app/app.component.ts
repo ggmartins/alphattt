@@ -29,6 +29,7 @@ export class AppComponent implements OnInit, OnDestroy {
   showBoard = false;
 
   turn: 'X' | 'O' = 'X';
+  winner: 'X' | 'O' | null = null;
 
   board: TicTacToeBoard = [
     [null, null, null],
@@ -144,6 +145,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.board = result['data']['board'];
     this.turn = result['data']['next_turn'].split(":")[1] as 'X' | 'O';
+    this.winner = this.toWinnerMark(result['data']['winner']);
   }
 
   onLaunchMatch(sessionId: number): void {
@@ -160,6 +162,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.playingAs = session.playingAs;
       this.playerId = session.playerId;
       this.turn = session.nextTurn.split(":")[1] as 'X' | 'O';
+      this.winner = this.toWinnerMark((session.board as any).winner);
       console.log(`Playing as: ${this.playingAs}`)
     }
 
@@ -189,6 +192,16 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     return 'not_launched';
+  }
+
+  private toWinnerMark(winnerId: unknown): 'X' | 'O' | null {
+    if (winnerId === null || winnerId === undefined) {
+      return null;
+    }
+
+    return Number(winnerId) === this.playerId
+      ? this.playingAs
+      : this.playingAs === 'X' ? 'O' : 'X';
   }
 
   recvMessage(message: string) {
